@@ -5,6 +5,10 @@ import logging
 import os
 import sys
 
+import gi
+gi.require_version('Gtk', '3.0')
+from gi.repository import Gtk
+
 # the package lives the parent directory, this trick lets us import it
 main_dir = os.path.dirname(sys.path[0])
 sys.path.insert(1, main_dir)
@@ -17,7 +21,7 @@ def parse_args():
     return parser.parse_args()
 
 def configure_logging(verbosity):
-    if verbosity == 0:
+    if verbosity == 0 or verbosity is None:
         level = logging.WARNING
     elif verbosity == 1:
         level = logging.INFO
@@ -35,12 +39,17 @@ def configure_logging(verbosity):
 
 def main():
     client = scnmonitor.SCNClient()
-    client.check()
 
-    print("Download: {:.2f} GB".format(client.download))
-    print("Upload:   {:.2f} GB".format(client.upload))
-    print("Total:    {:.2f} GB".format(client.total))
-    print("Usage:    {}%".format(client.percentage))
+    builder = Gtk.Builder()
+    builder.add_from_file(os.path.join(main_dir, "data/ui.glade"))
+
+    handler = scnmonitor.GUIEventHandler(client, builder)
+    builder.connect_signals(handler)
+
+    window = builder.get_object("mainWindow")
+    window.show_all()
+
+    Gtk.main()
 
 if __name__ == '__main__':
     args = parse_args()
